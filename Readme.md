@@ -1,7 +1,7 @@
 # Личный проект «Кекстаграм»
 
 * Студент: [Максим Николюкин](https://up.htmlacademy.ru/javascript/26/user/9853).
-* Наставник:[Сергей Рожков](https://htmlacademy.ru/profile/id1069033).
+* Наставник: [Сергей Рожков](https://htmlacademy.ru/profile/id1069033).
 
 ---
 
