@@ -11,7 +11,7 @@ const messages = [
 ];
 
 
-function generatePhotos() {
+function generatePosts() {
   const photos = [];
 
   for (let i = 1; i <= 25; i++) {
@@ -61,4 +61,4 @@ function generateComments()
   return comments;
 }
 
-export {generatePhotos};
+export {generatePosts};
