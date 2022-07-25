@@ -529,24 +529,37 @@ main {
 
 .effect-level {
   position: absolute;
-  bottom: 10px;
+  bottom: 9px;
   left: 50%;
 
+  padding: 7px 11px 0;
+
   width: 495px;
-  height: 33px;
+  height: 34px;
 
   font-size: 12px;
-  line-height: 42px;
   text-align: center;
   color: #ffffff;
   white-space: nowrap;
 
   background-color: rgba(0, 0, 0, 0.6);
-  border-radius: 33px;
+  border-radius: 34px;
 
   -webkit-transform: translateX(-50%);
       -ms-transform: translateX(-50%);
           transform: translateX(-50%);
+}
+
+.effect-level .noUi-target {
+  border-radius: 16px;
+}
+
+.effect-level .noUi-connects {
+  border-radius: 13px;
+}
+
+.effect-level .noUi-connect {
+  background: #ffe753;
 }
 
 .effect-level__value {
@@ -1150,6 +1163,14 @@ main {
   background-position: -5px -270px;
 }
 
+.contacts__link--instagram {
+  background-position: -5px -231px;
+}
+
+.contacts__link--facebook {
+  background-position: -5px -192px;
+}
+
 .contacts__link--vk {
   background-position: -5px -309px;
 }
@@ -1242,6 +1263,7 @@ main {
   margin-bottom: 50px;
 
   font-size: 32px;
+  line-height: 32px;
 }
 
 .error__title::before {
@@ -1395,3 +1417,15 @@ main {
 .hidden {
   display: none;
 }
+
+/* Оформление текста об ошибке ( валидация хеш-тегов, комментов********/
+
+.pristine-error.error-text {
+  text-transform: none;
+  margin-top: 0;
+}
+
+.is-invalid {
+  color: red;
+}
+
