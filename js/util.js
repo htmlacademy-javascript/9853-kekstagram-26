@@ -9,4 +9,4 @@ function checkStringLength (string, length) {
   return string.length <= length;
 }
 
-export {getRandomPositiveInteger,checkStringLength};
+export {getRandomPositiveInteger, checkStringLength};
