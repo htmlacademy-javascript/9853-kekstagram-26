@@ -1,14 +1,14 @@
-import {renderPosts, bindPostClickEvent} from './render.js';
-import {renderFullScreen} from './renderFullScreen.js';
+
+import {renderPosts} from './render.js';
 import {createPost} from './createPost.js';
+import {initPostsFilter} from './filter.js';
 import {getData} from './api.js';
 
 getData((posts) => {
   renderPosts(posts);
-  bindPostClickEvent((postId) => {
-    const selectedPost = posts.find((post) => post.id === +postId);
-    renderFullScreen(selectedPost);
-  });
+  initPostsFilter(posts);
 });
 
 createPost();
+
+
