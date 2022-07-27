@@ -1,23 +1,10 @@
-const ALERT_SHOW_TIME = 5000;
-const KEY_ESC = 'Escape';
-const checkEscapeKeydown = (evt) => evt.key === KEY_ESC;
-const getDataError = 'Ошибка получения данных';
-
-const showAlert = (message) => {
-  const alertDiv = document.createElement('div');
-  alertDiv.classList.add('alertError');
-  alertDiv.textContent = message;
-  document.body.appendChild(alertDiv);
-  setTimeout(() => {
-    alertDiv.remove();
-  }, ALERT_SHOW_TIME);
-};
+import {showMessage} from './message.js';
 
 const getData = (onSuccess) => {
   fetch('https://26.javascript.pages.academy/kekstagram/data')
     .then((response) => response.json())
     .then((posts) => onSuccess(posts))
-    .catch(() => showAlert(getDataError));
+    .catch(() =>  showMessage('Ошибка получения данных'));
 };
 
 const sendData = (onSuccess, onFail, body) => {
