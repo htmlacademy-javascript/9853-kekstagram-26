@@ -1,4 +1,4 @@
-import {renderFullScreen} from './renderFullScreen.js';
+import {view} from './view.js';
 
 const pictureBlock = document.querySelector('.pictures');
 const pictureTemplate = document.querySelector('#picture').content.querySelector('.picture');
@@ -13,7 +13,7 @@ const renderPosts = (posts) => {
     picture.querySelector('.picture__comments').textContent = post.comments.length;
 
     picture.addEventListener('click', () => {
-      renderFullScreen(post);
+      view (post);
     });
 
     picture.dataset.postId = post.id;

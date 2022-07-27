@@ -1,4 +1,6 @@
 import {checkStringLength} from './util.js';
+import {showSuccessMessage,  showErrorMessage, showMessage, checkEscapeKeydown} from './message.js';
+import {sendData} from './api.js';
 
 let currentEffect;
 
@@ -7,6 +9,10 @@ const RE_HASHTAG = /(^#[A-Za-zА-Яа-яЁё0-9]{1,20}\b\s?)((\b\s#[A-Za-zА-Я�
 const MIN_SCALE_VALUE = 25;
 const MAX_SCALE_VALUE = 100;
 const SCALE_STEP = 25;
+
+const commentError = `Комментарий не должен быть длиннее ${MAX_COMMENT_LENGTH} символов`;
+const hashtagError = 'Поле имеет неверный формат';
+const duplicateHashtagError = 'Хештеги не должны быть одинаковыми';
 
 const FILTER_TYPE = {
   NONE: 'none',
@@ -25,9 +31,9 @@ const FILTER_CSS_VALUE = {
   [FILTER_TYPE.HEAT]: 'brightness',
 };
 
+
 const uploadForm = document.querySelector('.img-upload__form');
 const editForm = uploadForm.querySelector('.img-upload__overlay');
-const uploadFileButton = uploadForm.querySelector('.img-upload__input');
 const closeFormButton = uploadForm.querySelector('.img-upload__cancel');
 const postHashtag = uploadForm.querySelector('.text__hashtags');
 const postDescription = uploadForm.querySelector('.text__description');
@@ -38,6 +44,9 @@ const scaleControl = uploadForm.querySelector('.scale__control--value');
 const effectsList = uploadForm.querySelector('.effects__list');
 const effectLevelSlider = uploadForm.querySelector('.effect-level__slider');
 const effectLevelValue = uploadForm.querySelector('.effect-level__value');
+const uploadSubmit = uploadForm.querySelector('.img-upload__submit');
+const fileUpload = uploadForm.querySelector('#upload-file');
+
 
 const pristine = new Pristine(uploadForm, {
   classTo: 'img-upload__field-wrapper',
@@ -45,15 +54,8 @@ const pristine = new Pristine(uploadForm, {
   errorTextClass: 'text-error'
 });
 
-const commentError = `Комментарий не должен быть длиннее ${MAX_COMMENT_LENGTH} символов`;
 const commentValidator = (value) => checkStringLength(value, MAX_COMMENT_LENGTH);
-pristine.addValidator(postDescription, commentValidator, commentError);
-
-const hashtagError = 'Поле имеет неверный формат';
 const hashtagValidator = (value) =>  RE_HASHTAG.test(value);
-pristine.addValidator(postHashtag, hashtagValidator, hashtagError);
-
-const duplicateHashtagError = 'Хештеги не должны быть одинаковыми';
 const duplicateHashtagValidator = (value) => {
   if(!value) {
     return true;
@@ -61,6 +63,9 @@ const duplicateHashtagValidator = (value) => {
   const hashtags = value.replace(/ +/,' ').trim().toLowerCase().split(' ');
   return hashtags.length === new Set(hashtags).size;
 };
+
+pristine.addValidator(postDescription, commentValidator, commentError);
+pristine.addValidator(postHashtag, hashtagValidator, hashtagError);
 pristine.addValidator(postHashtag, duplicateHashtagValidator, duplicateHashtagError);
 
 uploadForm.addEventListener('submit',(evt) => {
@@ -69,19 +74,6 @@ uploadForm.addEventListener('submit',(evt) => {
     evt.preventDefault();
   }
 });
-
-const close = () => {
-  editForm.classList.add('hidden');
-  document.body.classList.remove('modal-open');
-  uploadForm.reset();
-  pristine.reset();
-};
-
-const escapeKeydown = (evt) => {
-  if(evt.key === 'Escape'){
-    close();
-  }
-};
 
 uploadScale.addEventListener('click',(evt) => {
   const scaleSmaller = evt.target.closest('.scale__control--smaller');
@@ -177,17 +169,80 @@ const applySelectedEffect = (evt) => {
   }
 };
 
-const createPost = () => {
-  uploadFileButton.addEventListener('change', () => {
-    editForm.classList.remove('hidden');
-    document.body.classList.add('modal-open');
 
-    effectsList.addEventListener('change',applySelectedEffect);
-    uploadEffectLevel.classList.add('hidden');
+const closePostCreation = () => {
+  editForm.classList.add('hidden');
+  document.body.classList.remove('modal-open');
+  document.removeEventListener('keydown', escapeKeydown);
 
-    closeFormButton.addEventListener('click', close);
-    window.addEventListener('keydown', escapeKeydown);
-  });
+  uploadForm.reset();
+  pristine.reset();
+
+  closeFormButton.removeEventListener('click', closePostCreation);
+  effectsList.removeEventListener('change', applySelectedEffect);
+  editForm.removeEventListener('submit', postSubmitting);
+  uploadPreview.removeAttribute('style');
+
+  effectLevelSlider.noUiSlider.reset();
+  uploadPreview.classList.value = null;
+  currentEffect = null;
 };
 
-export { createPost };
+
+function escapeKeydown (evt) {
+  if(checkEscapeKeydown(evt)){
+    if (evt.target.matches('input') && evt.target.type === 'text' || evt.target.matches('textarea')) {
+      return;
+    }
+    closePostCreation();
+  }
+}
+
+function createNewPost() {
+  const file = this.files[0];
+  if (!file.type.startsWith('image/')) {
+    showMessage('Не удалось загрузить изображение');
+    return;
+  }
+
+  editForm.classList.remove('hidden');
+  document.body.classList.add('modal-open');
+
+  effectsList.addEventListener('change', applySelectedEffect);
+  uploadEffectLevel.classList.add('hidden');
+
+  closeFormButton.addEventListener('click', closePostCreation);
+  window.addEventListener('keydown', escapeKeydown);
+  uploadForm.addEventListener('submit', postSubmitting);
+
+  const fileReader = new FileReader();
+  fileReader.onload = (evt) => {
+    uploadPreview.src = evt.target.result;
+  };
+
+  fileReader.readAsDataURL(file);
+}
+
+
+function postSubmitting(evt) {
+  evt.preventDefault();
+
+  if (pristine.validate()) {
+    uploadSubmit.disabled = true;
+    sendData(
+      () => {
+        closePostCreation();
+        showSuccessMessage();
+        uploadSubmit.disabled = false;
+      },
+      () => {
+        showErrorMessage();
+        uploadSubmit.disabled = false;
+      },
+
+      new FormData(evt.target)
+    );
+  }
+}
+
+fileUpload.addEventListener('change', createNewPost);
