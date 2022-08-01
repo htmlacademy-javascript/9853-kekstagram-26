@@ -1,11 +1,9 @@
-import {checkStringLength} from './util.js';
-import {showSuccessMessage,  showErrorMessage, showMessage, checkEscapeKeydown} from './message.js';
-import {sendData} from './api.js';
-
-let currentEffect;
+import { checkStringLength } from './util.js';
+import { showSuccessMessage, showErrorMessage, showMessage, checkEscapeKeydown } from './message.js';
+import { sendData } from './api.js';
 
 const MAX_COMMENT_LENGTH = 140;
-const RE_HASHTAG = /(^#[A-Za-zА-Яа-яЁё0-9]{1,20}\b\s?)((\b\s#[A-Za-zА-Яа-яЁё0-9]{1,20}\b\s?){1,4})?$/;
+const RE_HASHTAG = /(^#[A-Za-zА-Яа-яЁё0-9]{1,19}\b\s?)((\b\s#[A-Za-zА-Яа-яЁё0-9]{1,19}\b\s?){1,4})?$/;
 const MIN_SCALE_VALUE = 25;
 const MAX_SCALE_VALUE = 100;
 const SCALE_STEP = 25;
@@ -14,7 +12,7 @@ const commentError = `Комментарий не должен быть длин
 const hashtagError = 'Поле имеет неверный формат';
 const duplicateHashtagError = 'Хештеги не должны быть одинаковыми';
 
-const FILTER_TYPE = {
+const FilterType = {
   NONE: 'none',
   CHROME: 'chrome',
   SEPIA: 'sepia',
@@ -23,174 +21,228 @@ const FILTER_TYPE = {
   HEAT: 'heat',
 };
 
-const FILTER_CSS_VALUE = {
-  [FILTER_TYPE.CHROME]: 'grayscale',
-  [FILTER_TYPE.SEPIA]: 'sepia',
-  [FILTER_TYPE.MARVIN]: 'invert',
-  [FILTER_TYPE.PHOBOS]: 'blur',
-  [FILTER_TYPE.HEAT]: 'brightness',
+const FilterValue = {
+  [FilterType.CHROME]: 'grayscale',
+  [FilterType.SEPIA]: 'sepia',
+  [FilterType.MARVIN]: 'invert',
+  [FilterType.PHOBOS]: 'blur',
+  [FilterType.HEAT]: 'brightness',
 };
 
+const uploadFormElement = document.querySelector('.img-upload__form');
+const editFormElement = uploadFormElement.querySelector('.img-upload__overlay');
+const closeFormButtonElement = uploadFormElement.querySelector('.img-upload__cancel');
+const postHashtagElement = uploadFormElement.querySelector('.text__hashtags');
+const postDescriptionElement = uploadFormElement.querySelector('.text__description');
+const uploadScaleElement = uploadFormElement.querySelector('.img-upload__scale');
+const uploadPreviewElement = uploadFormElement.querySelector('.img-upload__preview').querySelector('img');
+const uploadEffectLevelElement = uploadFormElement.querySelector('.img-upload__effect-level');
+const scaleControlElement = uploadFormElement.querySelector('.scale__control--value');
+const effectsListElement = uploadFormElement.querySelector('.effects__list');
+const effectLevelSliderElement = uploadFormElement.querySelector('.effect-level__slider');
+const uploadSubmitElement = uploadFormElement.querySelector('.img-upload__submit');
+const fileUploadElement = uploadFormElement.querySelector('#upload-file');
 
-const uploadForm = document.querySelector('.img-upload__form');
-const editForm = uploadForm.querySelector('.img-upload__overlay');
-const closeFormButton = uploadForm.querySelector('.img-upload__cancel');
-const postHashtag = uploadForm.querySelector('.text__hashtags');
-const postDescription = uploadForm.querySelector('.text__description');
-const uploadScale = uploadForm.querySelector('.img-upload__scale');
-const uploadPreview = uploadForm.querySelector('.img-upload__preview').querySelector('img');
-const uploadEffectLevel = uploadForm.querySelector('.img-upload__effect-level');
-const scaleControl = uploadForm.querySelector('.scale__control--value');
-const effectsList = uploadForm.querySelector('.effects__list');
-const effectLevelSlider = uploadForm.querySelector('.effect-level__slider');
-const effectLevelValue = uploadForm.querySelector('.effect-level__value');
-const uploadSubmit = uploadForm.querySelector('.img-upload__submit');
-const fileUpload = uploadForm.querySelector('#upload-file');
-
-
-const pristine = new Pristine(uploadForm, {
+const pristine = new Pristine(uploadFormElement, {
   classTo: 'img-upload__field-wrapper',
   errorTextParent: 'img-upload__field-wrapper',
   errorTextClass: 'text-error'
 });
 
-const commentValidator = (value) => checkStringLength(value, MAX_COMMENT_LENGTH);
-const hashtagValidator = (value) =>  RE_HASHTAG.test(value);
-const duplicateHashtagValidator = (value) => {
-  if(!value) {
+const validateComment = (value) => checkStringLength(value, MAX_COMMENT_LENGTH);
+const validateHashtag = (value) => {
+  if (!value) {
     return true;
   }
-  const hashtags = value.replace(/ +/,' ').trim().toLowerCase().split(' ');
+  return RE_HASHTAG.test(value);
+};
+
+const validateDuplicateHashtag = (value) => {
+  if (!value) {
+    return true;
+  }
+  const hashtags = value.replace(/ +/, ' ').trim().toLowerCase().split(' ');
   return hashtags.length === new Set(hashtags).size;
 };
 
-pristine.addValidator(postDescription, commentValidator, commentError);
-pristine.addValidator(postHashtag, hashtagValidator, hashtagError);
-pristine.addValidator(postHashtag, duplicateHashtagValidator, duplicateHashtagError);
+pristine.addValidator(postDescriptionElement, validateComment, commentError);
+pristine.addValidator(postHashtagElement, validateHashtag, hashtagError);
+pristine.addValidator(postHashtagElement, validateDuplicateHashtag, duplicateHashtagError);
 
-uploadForm.addEventListener('submit',(evt) => {
+uploadFormElement.addEventListener('submit', (evt) => {
   const valid = pristine.validate();
-  if(!valid) {
+  if (!valid) {
     evt.preventDefault();
   }
 });
 
-uploadScale.addEventListener('click',(evt) => {
+uploadScaleElement.addEventListener('click', (evt) => {
   const scaleSmaller = evt.target.closest('.scale__control--smaller');
   const scaleBigger = evt.target.closest('.scale__control--bigger');
 
-  let scaleControlValue = +(scaleControl.value).replace('%','');
+  let scaleControlValue = +(scaleControlElement.value).replace('%', '');
 
-  if(scaleSmaller && scaleControlValue > MIN_SCALE_VALUE){
+  if (scaleSmaller && scaleControlValue > MIN_SCALE_VALUE) {
     scaleControlValue -= SCALE_STEP;
-    uploadPreview.style.transform = `scale(${(scaleControlValue)/100})`;
-    scaleControl.value = `${scaleControlValue}%`;
+    uploadPreviewElement.style.transform = `scale(${(scaleControlValue) / 100})`;
+    scaleControlElement.value = `${scaleControlValue}%`;
   }
 
-  if(scaleBigger && scaleControlValue < MAX_SCALE_VALUE){
+  if (scaleBigger && scaleControlValue < MAX_SCALE_VALUE) {
     scaleControlValue += SCALE_STEP;
-    uploadPreview.style.transform = `scale(${(scaleControlValue)/100})`;
-    scaleControl.value = `${scaleControlValue}%`;
+    uploadPreviewElement.style.transform = `scale(${(scaleControlValue) / 100})`;
+    scaleControlElement.value = `${scaleControlValue}%`;
   }
 });
 
-const getUpdateSlider = (
-  min = 0,
-  max  = 1,
-  start = 1,
-  step = 1 ,
-  unit= '') => ({
-  range: {
-    min: min,
-    max: max
-  },
-  start: start,
-  step: step,
-  connect: 'lower',
-  format: {
-    to: (value) =>  {
-      if(Number.isInteger(value)) {
-        return `${value.toFixed(0)}${unit}`;
-      }
-    },
-    from: (value) => parseFloat(value.replace(unit,'')),
+const applyEffectToPost = (effectStyle ) => {
+  uploadEffectLevelElement.classList.remove('hidden');
+  switch(effectStyle) {
+    case 'grayscale':
+    case 'sepia':
+    case 'brightness':
+      effectLevelSliderElement.noUiSlider.on('update', () => {
+        uploadPreviewElement.style.filter = `${effectStyle}(${   effectLevelSliderElement.noUiSlider.get()})`;
+      });
+      break;
+    case 'invert':
+      effectLevelSliderElement.noUiSlider.on('update', () => {
+        uploadPreviewElement.style.filter = `${effectStyle}(${   effectLevelSliderElement.noUiSlider.get()}%)`;
+      });
+      break;
+    case 'blur':
+      effectLevelSliderElement.noUiSlider.on('update', () => {
+        uploadPreviewElement.style.filter = `${effectStyle}(${   effectLevelSliderElement.noUiSlider.get()}px)`;
+      });
+      break;
   }
-});
-
-const applyEffectToPost = (effectClass, effect) => {
-  currentEffect = effect;
-
-  uploadPreview.classList.add(effectClass);
-  uploadEffectLevel.classList.remove('hidden');
-  uploadPreview.style.filter = `${effect}(${effectLevelValue.value})`;
 };
 
 const deleteEffectFromPost = () => {
-  uploadPreview.classList.add('effects__preview--none');
-  uploadEffectLevel.classList.add('hidden');
-  uploadPreview.removeAttribute('style');
+  uploadPreviewElement.classList.add('effects__preview--none');
+  uploadEffectLevelElement.classList.add('hidden');
+  uploadPreviewElement.removeAttribute('style');
 };
 
-noUiSlider.create(effectLevelSlider,getUpdateSlider());
-
-effectLevelSlider.noUiSlider.on('update', () => {
-  const level = effectLevelSlider.noUiSlider.get();
-  uploadPreview.style.filter = `${currentEffect}(${level})`;
+noUiSlider.create(effectLevelSliderElement, {
+  start: 1,
+  step: 1,
+  range: {
+    min: 0,
+    max: 1,
+  },
 });
 
 const applySelectedEffect = (evt) => {
-  uploadPreview.classList.value = null;
+  uploadPreviewElement.classList.value = null;
 
   switch (evt.target.value) {
-    case FILTER_TYPE.NONE:
+    case FilterType.NONE:
       deleteEffectFromPost();
-      effectLevelSlider.noUiSlider.updateOptions(getUpdateSlider());
       break;
-    case FILTER_TYPE.CHROME:
-      applyEffectToPost('effects__preview--chrome',FILTER_CSS_VALUE.chrome);
-      effectLevelSlider.noUiSlider.updateOptions(getUpdateSlider());
+    case FilterType.CHROME:
+      applyEffectToPost(FilterValue.chrome);
+      effectLevelSliderElement.noUiSlider.updateOptions({
+        start: 1,
+        step: 0.1,
+        range: {
+          min: 0,
+          max: 1,
+        },
+      });
       break;
-    case FILTER_TYPE.SEPIA:
-      applyEffectToPost('effects__preview--sepia',FILTER_CSS_VALUE.sepia);
-      effectLevelSlider.noUiSlider.updateOptions(getUpdateSlider());
+    case FilterType.SEPIA:
+      applyEffectToPost( FilterValue.sepia);
+      effectLevelSliderElement.noUiSlider.updateOptions({
+        start: 1,
+        step: 0.1,
+        range: {
+          min: 0,
+          max: 1,
+        },
+      });
       break;
-    case FILTER_TYPE.MARVIN:
-      applyEffectToPost('effects__preview--marvin',FILTER_CSS_VALUE.marvin);
-      effectLevelSlider.noUiSlider.updateOptions(getUpdateSlider(0,100,100,1,'%'));
+    case FilterType.MARVIN:
+      applyEffectToPost( FilterValue.marvin);
+      effectLevelSliderElement.noUiSlider.updateOptions({
+        start: 100,
+        step: 1,
+        range: {
+          min: 0,
+          max: 100,
+        },
+      });
       break;
-    case FILTER_TYPE.PHOBOS:
-      applyEffectToPost('effects__preview--phobos',FILTER_CSS_VALUE.phobos);
-      effectLevelSlider.noUiSlider.updateOptions(getUpdateSlider(0,3,3,0.1,'px'));
+    case FilterType.PHOBOS:
+      applyEffectToPost(FilterValue.phobos);
+      effectLevelSliderElement.noUiSlider.updateOptions({
+        start: 3,
+        step: 0.1,
+        range: {
+          min: 0,
+          max: 3,
+        },
+      });
       break;
-    case FILTER_TYPE.HEAT:
-      applyEffectToPost('effects__preview--heat',FILTER_CSS_VALUE.heat);
-      effectLevelSlider.noUiSlider.updateOptions(getUpdateSlider(1,3,3,0.1));
+    case FilterType.HEAT:
+      applyEffectToPost(FilterValue.heat);
+      effectLevelSliderElement.noUiSlider.updateOptions({
+        start: 3,
+        step: 0.1,
+        range: {
+          min: 1,
+          max: 3,
+        },
+      });
       break;
   }
 };
 
 
 const closePostCreation = () => {
-  editForm.classList.add('hidden');
+  editFormElement.classList.add('hidden');
   document.body.classList.remove('modal-open');
   document.removeEventListener('keydown', escapeKeydown);
 
-  uploadForm.reset();
+  uploadFormElement.reset();
   pristine.reset();
 
-  closeFormButton.removeEventListener('click', closePostCreation);
-  effectsList.removeEventListener('change', applySelectedEffect);
-  editForm.removeEventListener('submit', postSubmitting);
-  uploadPreview.removeAttribute('style');
+  closeFormButtonElement.removeEventListener('click', closePostCreation);
+  effectsListElement.removeEventListener('change', applySelectedEffect);
+  editFormElement.removeEventListener('submit', postSubmitting);
+  uploadPreviewElement.removeAttribute('style');
 
-  effectLevelSlider.noUiSlider.reset();
-  uploadPreview.classList.value = null;
-  currentEffect = null;
+  effectLevelSliderElement.noUiSlider.reset();
+  uploadPreviewElement.classList.value = null;
 };
 
+const createNewPost = () => {
+  const file = fileUploadElement.files[0];
+  if (!file.type.startsWith('image/')) {
+    showMessage('Не удалось загрузить изображение');
+    return;
+  }
 
-function escapeKeydown (evt) {
-  if(checkEscapeKeydown(evt)){
+  editFormElement.classList.remove('hidden');
+  document.body.classList.add('modal-open');
+
+  effectsListElement.addEventListener('change', applySelectedEffect);
+  uploadEffectLevelElement.classList.add('hidden');
+
+  closeFormButtonElement.addEventListener('click', closePostCreation);
+  window.addEventListener('keydown', escapeKeydown);
+  uploadFormElement.addEventListener('submit', postSubmitting);
+
+  const fileReader = new FileReader();
+  fileReader.onload = (evt) => {
+    uploadPreviewElement.src = evt.target.result;
+  };
+
+  fileReader.readAsDataURL(file);
+};
+
+function escapeKeydown(evt) {
+  if (checkEscapeKeydown(evt)) {
     if (evt.target.matches('input') && evt.target.type === 'text' || evt.target.matches('textarea')) {
       return;
     }
@@ -198,46 +250,20 @@ function escapeKeydown (evt) {
   }
 }
 
-function createNewPost() {
-  const file = this.files[0];
-  if (!file.type.startsWith('image/')) {
-    showMessage('Не удалось загрузить изображение');
-    return;
-  }
-
-  editForm.classList.remove('hidden');
-  document.body.classList.add('modal-open');
-
-  effectsList.addEventListener('change', applySelectedEffect);
-  uploadEffectLevel.classList.add('hidden');
-
-  closeFormButton.addEventListener('click', closePostCreation);
-  window.addEventListener('keydown', escapeKeydown);
-  uploadForm.addEventListener('submit', postSubmitting);
-
-  const fileReader = new FileReader();
-  fileReader.onload = (evt) => {
-    uploadPreview.src = evt.target.result;
-  };
-
-  fileReader.readAsDataURL(file);
-}
-
-
 function postSubmitting(evt) {
   evt.preventDefault();
 
   if (pristine.validate()) {
-    uploadSubmit.disabled = true;
+    uploadSubmitElement.disabled = true;
     sendData(
       () => {
         closePostCreation();
         showSuccessMessage();
-        uploadSubmit.disabled = false;
+        uploadSubmitElement.disabled = false;
       },
       () => {
         showErrorMessage();
-        uploadSubmit.disabled = false;
+        uploadSubmitElement.disabled = false;
       },
 
       new FormData(evt.target)
@@ -245,4 +271,5 @@ function postSubmitting(evt) {
   }
 }
 
-fileUpload.addEventListener('change', createNewPost);
+fileUploadElement.addEventListener('change', createNewPost);
+

@@ -1,11 +1,15 @@
+const ALERT_SHOW_TIME = 5000;
+const  KEY_ESC = 'Escape';
+
 const successMessage = document.querySelector('#success').content.querySelector('.success');
 const errorMessage = document.querySelector('#error').content.querySelector('.error');
 const successButton = successMessage.querySelector('.success__button');
 const errorButton = errorMessage.querySelector('.error__button');
 
+
 let activeMessage;
 
-const checkEscapeKeydown = (evt) => evt.key === 'Escape';
+const checkEscapeKeydown = (evt) => evt.key === KEY_ESC;
 
 
 const showMessage = (message) => {
@@ -18,7 +22,7 @@ const showMessage = (message) => {
   document.querySelector('.pictures').appendChild(div);
   setTimeout(() => {
     div.remove();
-  }, 5000);
+  }, ALERT_SHOW_TIME);
 };
 
 
