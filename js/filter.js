@@ -1,7 +1,11 @@
 import {debounce, getRandomPositiveInteger} from './util.js';
 import {renderPosts} from './render.js';
 
-const POST_MAX_COUNT = 10;
+const RandomPictures = {
+  MIN_ID: 0,
+  MAX_ID: 24,
+  MAX_COUNT: 10
+};
 const RERENDER_DELAY = 500;
 
 const pictureBlock = document.querySelector('.pictures');
@@ -21,23 +25,8 @@ const enableFilterPosts = () => {
 };
 
 const filterPostsDefault = (userPosts) => userPosts;
-
 const filterPostsDiscuss = (userPosts) => userPosts.slice().sort((commentA, commentB) => commentB.comments.length - commentA.comments.length);
-
-const filterPostsRandom = (posts) => {
-  const min = 0;
-  const max = posts.length - 1;
-
-  const randomPostsIndexes = [];
-  for (let i = 0; i < POST_MAX_COUNT; i++) {
-    const randomIndex = getRandomPositiveInteger(min, max);
-    if(!randomPostsIndexes.includes(randomIndex)) {
-      randomPostsIndexes.push(randomIndex);
-    }
-  }
-
-  return randomPostsIndexes.map((index) => posts[index]);
-};
+const filterPostsRandom = (posts) => posts.slice().sort((item) => item.id -  getRandomPositiveInteger(RandomPictures.MIN_ID, RandomPictures.MAX_ID)).slice(RandomPictures.MIN_ID, RandomPictures.MAX_COUNT);
 
 const changeFilterClassName = (filterName) => {
   document.querySelectorAll('.img-filters__button')
