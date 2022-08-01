@@ -51,19 +51,32 @@ const getMoreComments = (comments) => {
 };
 
 const showAllComments = (comments) => {
-  let allComments = '';
-  comments.forEach((comment) => {
-    allComments +=
-      `<li class="social__comment">
-       <img
-          class="social__picture"
-          src="${comment.avatar}"
-          alt="${comment.name}"
-          width="35" height="35">
-       <p class="social__text">${comment.message}</p>
-      </li>`;
+  const fragment = document.createDocumentFragment();
+  socialComments.innerHTML = '';
+  comments.forEach((item, index) => {
+    const commentator = {
+      avatar: item.avatar,
+      name: item.name,
+      message: item.message
+    };
+    const commentElement = document.createElement('li');
+    const imageElement = document.createElement('img');
+    const textElement = document.createElement('p');
+    commentElement.classList.add('social__comment');
+    if (index >=SHOWN_COMMENTS_AMOUNT) {
+      commentElement.classList.add('hidden');
+    }
+    imageElement.classList.add('social__picture');
+    imageElement.setAttribute('src', commentator.avatar);
+    imageElement.setAttribute('alt', commentator.name);
+    textElement.classList.add('social__text');
+    textElement.textContent = commentator.message;
+    commentElement.append(imageElement);
+    commentElement.append(textElement);
+    fragment.append(commentElement);
   });
-  socialComments.innerHTML = allComments;
+  socialComments.append(fragment);
+
 };
 
 const close = () => {
@@ -87,6 +100,10 @@ const view = (post) => {
   fullScreenPicture.querySelector('.likes-count').textContent = post.likes;
   fullScreenPicture.querySelector('.comments-count').textContent = post.comments.length;
   fullScreenPicture.querySelector('.social__caption').textContent = post.description;
+
+  if (post.comments.length > SHOWN_COMMENTS_AMOUNT) {
+    uploadComments.classList.remove('hidden');
+  }
 
   showAllComments(post.comments);
 
